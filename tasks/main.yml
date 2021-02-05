@@ -1,0 +1,50 @@
+---
+- name: install docker & iproute-tc
+  package:
+      name: "{{ item }}"
+      state: present
+  loop:
+      - docker
+      - iproute-tc
+
+- name: start docker serveice
+  service:
+      name: docker
+      state: started
+      enabled: yes
+
+- name: configuring repo for kudeadm
+  copy:
+      src: kube.repo
+      dest: /etc/yum.repos.d/kube.repo
+
+- name: installing kubeadm & kublet
+  command: yum install -y kubeadm kublet --disableexcludes=kubernetes
+
+- name: start kublet serveice
+  service:
+      name: kubelet
+      state: started
+      enabled: yes
+  ignore_errors: yes
+
+- name: changing driver of docker
+  copy:
+      src: docker_driver
+      dest: /etc/docker/daemon.json
+
+- name: start docker serveice
+  service:
+      name: docker
+      state: restarted
+      enabled: yes
+
+- name: configuring n/w of k8s
+  copy:
+      src: k8s.conf
+      dest: /etc/sysctl.d/k8s.conf
+
+- name: restarting
+  command: sysctl --system
+
+# tasks file for k8s_slave
